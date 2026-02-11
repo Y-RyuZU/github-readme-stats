@@ -46,9 +46,74 @@ const fetcher = (variables, token) => {
   );
 };
 
+// Organization repos fetcher
+const orgFetcher = (variables, token) => {
+  return request(
+    {
+      query: `
+      query orgInfo($login: String!) {
+        organization(login: $login) {
+          repositories(isFork: false, first: 100) {
+            nodes {
+              name
+              languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+                edges {
+                  size
+                  node {
+                    color
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      `,
+      variables,
+    },
+    {
+      Authorization: `bearer ${token}`,
+    },
+  );
+};
+
 /**
  * @typedef {import("./types").TopLangData} TopLangData Top languages data.
  */
+
+// Organization repos fetcher
+const orgFetcher = (variables, token) => {
+  return request(
+    {
+      query: `
+      query orgInfo($login: String!) {
+        organization(login: $login) {
+          repositories(isFork: false, first: 100) {
+            nodes {
+              name
+              size
+              languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+                edges {
+                  size
+                  node {
+                    color
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      `,
+      variables,
+    },
+    {
+      Authorization: `bearer ${token}`,
+    },
+  );
+};
 
 /**
  * Fetch top languages for a given username.
@@ -57,6 +122,7 @@ const fetcher = (variables, token) => {
  * @param {string[]} exclude_repo List of repositories to exclude.
  * @param {number} size_weight Weightage to be given to size.
  * @param {number} count_weight Weightage to be given to count.
+ * @param {string[]} orgs List of organization logins to include.
  * @returns {Promise<TopLangData>} Top languages data.
  */
 const fetchTopLanguages = async (
@@ -64,6 +130,7 @@ const fetchTopLanguages = async (
   exclude_repo = [],
   size_weight = 1,
   count_weight = 0,
+  orgs = [],
 ) => {
   if (!username) {
     throw new MissingParamError(["username"]);
@@ -92,6 +159,27 @@ const fetchTopLanguages = async (
   }
 
   let repoNodes = res.data.data.user.repositories.nodes;
+
+  // Fetch and merge org repos
+  if (orgs && orgs.length > 0) {
+    for (const org of orgs) {
+      try {
+        const orgRes = await retryer(orgFetcher, { login: org });
+        if (
+          orgRes.data.data &&
+          orgRes.data.data.organization &&
+          orgRes.data.data.organization.repositories
+        ) {
+          repoNodes.push(
+            ...orgRes.data.data.organization.repositories.nodes,
+          );
+        }
+      } catch (err) {
+        logger.error(`Failed to fetch org "${org}":`, err);
+      }
+    }
+  }
+
   /** @type {Record<string, boolean>} */
   let repoToHide = {};
   const allExcludedRepos = [...exclude_repo, ...excludeRepositories];
