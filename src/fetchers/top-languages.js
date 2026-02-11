@@ -60,7 +60,6 @@ const orgFetcher = (variables, token) => {
           repositories(isFork: false, first: 100) {
             nodes {
               name
-              size
               languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
                 edges {
                   size
