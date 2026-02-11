@@ -46,38 +46,6 @@ const fetcher = (variables, token) => {
   );
 };
 
-// Organization repos fetcher
-const orgFetcher = (variables, token) => {
-  return request(
-    {
-      query: `
-      query orgInfo($login: String!) {
-        organization(login: $login) {
-          repositories(isFork: false, first: 100) {
-            nodes {
-              name
-              languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
-                edges {
-                  size
-                  node {
-                    color
-                    name
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      `,
-      variables,
-    },
-    {
-      Authorization: `bearer ${token}`,
-    },
-  );
-};
-
 /**
  * @typedef {import("./types").TopLangData} TopLangData Top languages data.
  */
