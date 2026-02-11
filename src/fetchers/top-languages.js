@@ -133,6 +133,7 @@ const fetchTopLanguages = async (
     for (const org of orgs) {
       try {
         const orgRes = await retryer(orgFetcher, { login: org });
+        console.log("orgRes:", JSON.stringify(orgRes.data, null, 2));
         if (
           orgRes.data.data &&
           orgRes.data.data.organization &&
